@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      String   // ADMIN, BASE_COMMANDER, LOGISTICS_OFFICER
+  name      String?
+  baseId    String?
+  base      Base?    @relation(fields: [baseId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchases   Purchase[]
+  assignments Assignment[]
+}
+
+model Base {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  inventory   Inventory[]
+  purchases   Purchase[]
+  transfersFrom Transfer[] @relation("TransferFrom")
+  transfersTo   Transfer[] @relation("TransferTo")
+}
+
+model Inventory {
+  id          String   @id @default(uuid())
+  baseId      String
+  base        Base     @relation(fields: [baseId], references: [id])
+  equipment   String
+  quantity    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([baseId, equipment])
+}
+
+model Purchase {
+  id          String   @id @default(uuid())
+  baseId      String
+  base        Base     @relation(fields: [baseId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  equipment   String
+  quantity    Int
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+model Transfer {
+  id          String   @id @default(uuid())
+  fromBaseId  String
+  fromBase    Base     @relation("TransferFrom", fields: [fromBaseId], references: [id])
+  toBaseId    String
+  toBase      Base     @relation("TransferTo", fields: [toBaseId], references: [id])
+  equipment   String
+  quantity    Int
+  date        DateTime @default(now())
+  status      String   @default("COMPLETED") // PENDING, COMPLETED, REJECTED
+  createdAt   DateTime @default(now())
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  equipment   String
+  quantity    Int
+  type        String   // ASSIGNED, EXPENDED
+  personnel   String?  // Name of personnel assigned to
+  reason      String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+}

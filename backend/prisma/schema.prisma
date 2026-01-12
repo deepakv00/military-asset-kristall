@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      String   // ADMIN, BASE_COMMANDER, LOGISTICS_OFFICER
+  name      String?
+  baseId    String?  @map("base_id")
+  base      Base?    @relation(fields: [baseId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  purchases   Purchase[]
+  assignments Assignment[]
+  auditLogs   AuditLog[]
+
+  @@map("users")
+}
+
+model Base {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  location  String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users         User[]
+  inventory     Inventory[]
+  purchases     Purchase[]
+  transfersFrom Transfer[] @relation("TransferFrom")
+  transfersTo   Transfer[] @relation("TransferTo")
+  assignments   Assignment[]
+
+  @@map("bases")
+}
+
+model Equipment {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  inventory   Inventory[]
+  purchases   Purchase[]
+  transfers   Transfer[]
+  assignments Assignment[]
+
+  @@map("equipment")
+}
+
+model Inventory {
+  id          String   @id @default(uuid())
+  baseId      String   @map("base_id")
+  base        Base     @relation(fields: [baseId], references: [id])
+  equipmentId String   @map("equipment_id")
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  quantity    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([baseId, equipmentId])
+  @@map("inventory")
+}
+
+model Purchase {
+  id          String   @id @default(uuid())
+  baseId      String   @map("base_id")
+  base        Base     @relation(fields: [baseId], references: [id])
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id])
+  equipmentId String   @map("equipment_id")
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  quantity    Int
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("purchases")
+}
+
+model Transfer {
+  id          String   @id @default(uuid())
+  fromBaseId  String   @map("from_base_id")
+  fromBase    Base     @relation("TransferFrom", fields: [fromBaseId], references: [id])
+  toBaseId    String   @map("to_base_id")
+  toBase      Base     @relation("TransferTo", fields: [toBaseId], references: [id])
+  equipmentId String   @map("equipment_id")
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  quantity    Int
+  date        DateTime @default(now())
+  status      String   @default("COMPLETED") // PENDING, COMPLETED, REJECTED
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("transfers")
+}
+
+model Assignment {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  user          User     @relation(fields: [userId], references: [id])
+  baseId        String?  @map("base_id")
+  base          Base?    @relation(fields: [baseId], references: [id])
+  equipmentId   String   @map("equipment_id")
+  equipment     Equipment @relation(fields: [equipmentId], references: [id])
+  quantity      Int
+  type          String   // ASSIGNED, EXPENDED
+  personnelName String?  @map("personnel_name")
+  reason        String?
+  date          DateTime @default(now())
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("assignments")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String   // PURCHASE, TRANSFER, ASSIGNMENT, EXPENDITURE
+  entity    String   // Table name
+  entityId  String   @map("entity_id")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  details   String?
+  timestamp DateTime @default(now())
+
+  @@map("audit_logs")
+}

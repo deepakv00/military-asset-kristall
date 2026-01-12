@@ -52,18 +52,6 @@ async function main() {
         },
     })
 
-    await prisma.user.upsert({
-        where: { email: "commander@benning.mil" },
-        update: { password: commanderPassword },
-        create: {
-            email: "commander@benning.mil",
-            password: commanderPassword,
-            role: "BASE_COMMANDER",
-            name: "Commander Benning",
-            baseId: benning.id,
-        },
-    })
-
     const logisticsPassword = await bcrypt.hash("logistics123", 10)
     await prisma.user.upsert({
         where: { email: "logistics@army.mil" },
@@ -73,6 +61,18 @@ async function main() {
             password: logisticsPassword,
             role: "LOGISTICS_OFFICER",
             name: "Logistics Officer",
+            baseId: benning.id,
+        },
+    })
+
+    await prisma.user.upsert({
+        where: { email: "commander@benning.mil" },
+        update: { password: commanderPassword },
+        create: {
+            email: "commander@benning.mil",
+            password: commanderPassword,
+            role: "BASE_COMMANDER",
+            name: "Commander Benning",
             baseId: benning.id,
         },
     })

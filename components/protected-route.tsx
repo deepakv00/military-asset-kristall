@@ -11,8 +11,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
+    // Only decide redirects after hydration is complete
     if (!isLoading && !isAuthenticated) {
-      router.push("/")
+      router.push("/login")
     }
   }, [isAuthenticated, isLoading, router])
 

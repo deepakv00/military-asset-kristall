@@ -44,7 +44,15 @@ export interface Assignment {
     user: { email: string }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+const getApiUrl = () => {
+    let url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+    if (url.endsWith("/")) {
+        url = url.slice(0, -1)
+    }
+    return url
+}
+
+const API_URL = getApiUrl()
 
 const getHeaders = () => {
     const token = localStorage.getItem("token")

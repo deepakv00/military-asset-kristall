@@ -88,8 +88,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("user", JSON.stringify(newUser))
         localStorage.setItem("token", newToken)
       }
-      // Keep cookie for middleware compatibility
-      document.cookie = `token=${newToken}; path=/; max-age=86400; SameSite=Lax`
+      // Keep cookie for middleware compatibility (add Secure on HTTPS)
+      const secureAttr = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : ""
+      document.cookie = `token=${newToken}; path=/; max-age=86400; SameSite=Lax${secureAttr}`
     } catch (error) {
       console.error("Login error:", error)
       if (error instanceof Error) {
@@ -109,7 +110,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem("token")
     }
     // Clear cookie for middleware
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+    const secureAttr = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : ""
+    document.cookie = `token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secureAttr}`
   }
 
   const value: AuthContextType = {

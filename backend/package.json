@@ -19,6 +19,10 @@
   "packageManager": "pnpm@10.15.0",
   "dependencies": {
     "@prisma/client": "^5.10.0",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.6",
     "@types/pdfkit": "^0.17.4",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
@@ -29,15 +33,11 @@
     "pdfkit": "^0.17.2",
     "prisma": "^5.10.0",
     "socket.io": "^4.8.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^3.0.0",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/node": "^25.0.6",
-    "nodemon": "^3.1.11",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "nodemon": "^3.1.11"
   }
 }

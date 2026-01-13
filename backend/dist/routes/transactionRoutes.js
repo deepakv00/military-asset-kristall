@@ -1,0 +1,28 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const transactionController_1 = require("../controllers/transactionController");
+const baseController_1 = require("../controllers/baseController");
+const inventoryController_1 = require("../controllers/inventoryController");
+const userController_1 = require("../controllers/userController");
+const reportController_1 = require("../controllers/reportController");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+router.get("/bases", auth_1.authenticate, baseController_1.getBases);
+router.get("/inventory", auth_1.authenticate, inventoryController_1.getInventory);
+router.get("/movement-logs", auth_1.authenticate, inventoryController_1.getMovementLogs);
+router.get("/purchases", auth_1.authenticate, transactionController_1.getPurchases);
+router.post("/purchases", auth_1.authenticate, transactionController_1.createPurchase);
+router.get("/reports/purchases/pdf", auth_1.authenticate, reportController_1.exportPurchasesPDF);
+router.get("/transfers", auth_1.authenticate, transactionController_1.getTransfers);
+router.post("/transfers", auth_1.authenticate, transactionController_1.createTransfer);
+router.get("/reports/transfers/excel", auth_1.authenticate, reportController_1.exportTransfersExcel);
+router.get("/assignments", auth_1.authenticate, transactionController_1.getAssignments);
+router.post("/assignments", auth_1.authenticate, transactionController_1.createAssignment);
+router.get("/reports/assignments/pdf", auth_1.authenticate, reportController_1.exportAssignmentsPDF);
+// User management (Admin only)
+router.get("/users", auth_1.authenticate, userController_1.getUsers);
+router.post("/users", auth_1.authenticate, userController_1.createUser);
+router.put("/users/:id", auth_1.authenticate, userController_1.updateUser);
+router.delete("/users/:id", auth_1.authenticate, userController_1.deleteUser);
+exports.default = router;

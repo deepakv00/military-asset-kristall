@@ -31,6 +31,8 @@ export default function AssignmentsPage() {
     date: new Date().toISOString().split("T")[0],
   })
 
+  const [selectedBase, setSelectedBase] = useState("")
+
   const canAddAssignments = ["ADMIN", "LOGISTICS_OFFICER"].includes(user?.role || "")
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export default function AssignmentsPage() {
     setIsLoading(true)
     try {
       const [assignmentsData, basesData] = await Promise.all([
-        fetchAssignments(),
+        fetchAssignments({ baseId: selectedBase || undefined }),
         fetchBases()
       ])
       setAssignments(assignmentsData)
@@ -61,9 +63,9 @@ export default function AssignmentsPage() {
     }
   }
 
-  const loadAssignments = async () => {
+  const loadAssignments = async (baseId?: string) => {
     try {
-      const data = await fetchAssignments()
+      const data = await fetchAssignments({ baseId })
       setAssignments(data)
     } catch (error) {
       console.error("Failed to load assignments:", error)
@@ -150,6 +152,37 @@ export default function AssignmentsPage() {
             </div>
           </div>
 
+          {/* Filters */}
+          <Card className="mb-8 border-border shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base font-semibold">Filters</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4 items-end">
+                {["ADMIN", "LOGISTICS_OFFICER"].includes(user?.role || "") && (
+                  <div>
+                    <label className="text-xs font-medium text-foreground block mb-2">Base</label>
+                    <select
+                      value={selectedBase}
+                      onChange={(e) => {
+                        setSelectedBase(e.target.value)
+                        loadAssignments(e.target.value)
+                      }}
+                      className="px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[180px]"
+                    >
+                      <option value="">All Bases</option>
+                      {bases.map((base) => (
+                        <option key={base.id} value={base.id}>
+                          {base.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {successMessage && (
             <div className="p-4 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 rounded-md mb-6">
               {successMessage}
@@ -170,7 +203,7 @@ export default function AssignmentsPage() {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {user?.role === "ADMIN" && (
+                    {["ADMIN", "LOGISTICS_OFFICER"].includes(user?.role || "") && (
                       <div>
                         <label className="text-sm font-medium">Base *</label>
                         <select

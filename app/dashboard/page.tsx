@@ -108,7 +108,7 @@ export default function DashboardPage() {
                   <select
                     value={filters.baseId}
                     onChange={(e) => setFilters({ ...filters, baseId: e.target.value })}
-                    disabled={user?.role !== "ADMIN"}
+                    disabled={!["ADMIN", "LOGISTICS_OFFICER"].includes(user?.role || "")}
                     className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
                   >
                     <option value="">All Bases</option>

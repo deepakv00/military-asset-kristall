@@ -92,7 +92,7 @@ export default function InventoryPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="flex flex-wrap gap-4 items-end">
-                                {user?.role === "ADMIN" && (
+                                {["ADMIN", "LOGISTICS_OFFICER"].includes(user?.role || "") && (
                                     <div>
                                         <label className="text-xs font-medium text-foreground block mb-2">Base</label>
                                         <select

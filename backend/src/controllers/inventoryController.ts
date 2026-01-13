@@ -9,13 +9,16 @@ export const getInventory = async (req: AuthRequest, res: Response) => {
 
         const where: any = {}
 
-        // RBAC: Non-admin users can only see their base's inventory
-        if (user.role !== "ADMIN") {
+        // RBAC: Base Commander can only see their own base. Logistics Officer can see all bases.
+        if (user.role === "BASE_COMMANDER") {
+            where.baseId = user.baseId
+        } else if (user.role !== "ADMIN" && !baseId) {
             where.baseId = user.baseId
         } else if (baseId) {
             where.baseId = baseId as string
         }
 
+        // 1. Fetch all inventory items
         const inventory = await prisma.inventory.findMany({
             where,
             include: {
@@ -28,55 +31,61 @@ export const getInventory = async (req: AuthRequest, res: Response) => {
             ],
         })
 
-        // Calculate additional metrics for each item
-        const enrichedInventory = await Promise.all(
-            inventory.map(async (item) => {
-                // Get aggregated data for this base+equipment combination
-                const [purchases, transfersIn, transfersOut, assigned, expended] = await Promise.all([
-                    prisma.purchase.aggregate({
-                        where: { baseId: item.baseId, equipmentId: item.equipmentId },
-                        _sum: { quantity: true },
-                    }),
-                    prisma.transfer.aggregate({
-                        where: { toBaseId: item.baseId, equipmentId: item.equipmentId, status: "COMPLETED" },
-                        _sum: { quantity: true },
-                    }),
-                    prisma.transfer.aggregate({
-                        where: { fromBaseId: item.baseId, equipmentId: item.equipmentId, status: "COMPLETED" },
-                        _sum: { quantity: true },
-                    }),
-                    prisma.assignment.aggregate({
-                        where: {
-                            equipmentId: item.equipmentId,
-                            type: "ASSIGNED",
-                            user: { baseId: item.baseId },
-                        },
-                        _sum: { quantity: true },
-                    }),
-                    prisma.assignment.aggregate({
-                        where: {
-                            equipmentId: item.equipmentId,
-                            type: "EXPENDED",
-                            user: { baseId: item.baseId },
-                        },
-                        _sum: { quantity: true },
-                    }),
-                ])
+        if (inventory.length === 0) {
+            return res.json([])
+        }
 
-                return {
-                    id: item.id,
-                    base: item.base,
-                    equipment: item.equipment,
-                    quantity: item.quantity,
-                    purchased: purchases._sum.quantity || 0,
-                    transferredIn: transfersIn._sum.quantity || 0,
-                    transferredOut: transfersOut._sum.quantity || 0,
-                    assigned: assigned._sum.quantity || 0,
-                    expended: expended._sum.quantity || 0,
-                    updatedAt: item.updatedAt,
-                }
-            })
-        )
+        // 2. Fetch aggregated metrics in bulk using groupBy
+        const [purchaseSums, transferInSums, transferOutSums, assignmentSums] = await Promise.all([
+            prisma.purchase.groupBy({
+                by: ["baseId", "equipmentId"],
+                _sum: { quantity: true },
+            }),
+            prisma.transfer.groupBy({
+                by: ["toBaseId", "equipmentId"],
+                where: { status: "COMPLETED" },
+                _sum: { quantity: true },
+            }),
+            prisma.transfer.groupBy({
+                by: ["fromBaseId", "equipmentId"],
+                where: { status: "COMPLETED" },
+                _sum: { quantity: true },
+            }),
+            prisma.assignment.groupBy({
+                by: ["baseId", "equipmentId", "type"],
+                _sum: { quantity: true },
+            }),
+        ])
+
+        // 3. Create lookup maps for quick access
+        const purchaseMap = new Map(purchaseSums.map(s => [`${s.baseId}-${s.equipmentId}`, s._sum.quantity || 0]))
+        const transferInMap = new Map(transferInSums.map(s => [`${s.toBaseId}-${s.equipmentId}`, s._sum.quantity || 0]))
+        const transferOutMap = new Map(transferOutSums.map(s => [`${s.fromBaseId}-${s.equipmentId}`, s._sum.quantity || 0]))
+
+        const assignedMap = new Map()
+        const expendedMap = new Map()
+        assignmentSums.forEach(s => {
+            const key = `${s.baseId}-${s.equipmentId}`
+            if (s.type === "ASSIGNED") assignedMap.set(key, s._sum.quantity || 0)
+            if (s.type === "EXPENDED") expendedMap.set(key, s._sum.quantity || 0)
+        })
+
+        // 4. Enrich inventory items with metrics
+        const enrichedInventory = inventory.map((item) => {
+            const key = `${item.baseId}-${item.equipmentId}`
+            return {
+                id: item.id,
+                base: item.base,
+                equipment: item.equipment,
+                quantity: item.quantity,
+                purchased: purchaseMap.get(key) || 0,
+                transferredIn: transferInMap.get(key) || 0,
+                transferredOut: transferOutMap.get(key) || 0,
+                assigned: assignedMap.get(key) || 0,
+                expended: expendedMap.get(key) || 0,
+                updatedAt: item.updatedAt,
+            }
+        })
 
         res.json(enrichedInventory)
     } catch (error) {
@@ -93,8 +102,8 @@ export const getMovementLogs = async (req: AuthRequest, res: Response) => {
         // Fetch all movement types and combine them
         const movements: any[] = []
 
-        // Build base filter for RBAC
-        const baseFilter = user.role === "ADMIN"
+        // Build base filter for RBAC: Logistics Officer can see all bases
+        const baseFilter = (user.role === "ADMIN" || user.role === "LOGISTICS_OFFICER")
             ? (baseId ? { baseId: baseId as string } : {})
             : { baseId: user.baseId }
 

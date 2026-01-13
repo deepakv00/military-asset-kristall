@@ -11,8 +11,10 @@ export const getPurchases = async (req: AuthRequest, res: Response) => {
 
         const where: any = {}
 
-        // RBAC
-        if (user.role !== "ADMIN") {
+        // RBAC: Logistics Officer can see all bases
+        if (user.role === "BASE_COMMANDER") {
+            where.baseId = user.baseId
+        } else if (user.role !== "ADMIN" && !baseId) {
             where.baseId = user.baseId
         } else if (baseId) {
             where.baseId = baseId as string
@@ -39,10 +41,8 @@ export const createPurchase = async (req: AuthRequest, res: Response) => {
         const { baseId, equipmentName, quantity, date } = req.body
         const user = req.user!
 
-        // RBAC: Logistics Officer can only purchase for their base
-        if (user.role === "LOGISTICS_OFFICER" && baseId !== user.baseId) {
-            return res.status(403).json({ error: "Cannot purchase for another base" })
-        }
+        // RBAC: Logistics Officer can purchase for any base as requested by user
+        // Previously: if (user.role === "LOGISTICS_OFFICER" && baseId !== user.baseId)
 
         // Base Commander cannot purchase
         if (user.role === "BASE_COMMANDER") {

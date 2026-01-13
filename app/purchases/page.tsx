@@ -20,6 +20,7 @@ export default function PurchasesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
+  const [selectedBase, setSelectedBase] = useState("")
 
   const [formData, setFormData] = useState({
     baseId: user?.baseId || "",
@@ -44,7 +45,7 @@ export default function PurchasesPage() {
     setIsLoading(true)
     try {
       const [purchasesData, basesData] = await Promise.all([
-        fetchPurchases(),
+        fetchPurchases({ baseId: selectedBase || undefined }),
         fetchBases()
       ])
       setPurchases(purchasesData)
@@ -56,9 +57,9 @@ export default function PurchasesPage() {
     }
   }
 
-  const loadPurchases = async () => {
+  const loadPurchases = async (baseId?: string) => {
     try {
-      const data = await fetchPurchases()
+      const data = await fetchPurchases({ baseId })
       setPurchases(data)
     } catch (error) {
       console.error("Failed to load purchases:", error)
@@ -136,6 +137,37 @@ export default function PurchasesPage() {
             </div>
           </div>
 
+          {/* Filters */}
+          <Card className="mb-8 border-border shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base font-semibold">Filters</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4 items-end">
+                {["ADMIN", "LOGISTICS_OFFICER"].includes(user?.role || "") && (
+                  <div>
+                    <label className="text-xs font-medium text-foreground block mb-2">Base</label>
+                    <select
+                      value={selectedBase}
+                      onChange={(e) => {
+                        setSelectedBase(e.target.value)
+                        loadPurchases(e.target.value)
+                      }}
+                      className="px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[180px]"
+                    >
+                      <option value="">All Bases</option>
+                      {bases.map((base) => (
+                        <option key={base.id} value={base.id}>
+                          {base.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {successMessage && (
             <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-md mb-6 text-sm">
               {successMessage}
@@ -157,7 +189,7 @@ export default function PurchasesPage() {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {user?.role === "ADMIN" && (
+                    {["ADMIN", "LOGISTICS_OFFICER"].includes(user?.role || "") && (
                       <div>
                         <label className="text-xs font-medium text-foreground block mb-2">Base *</label>
                         <select

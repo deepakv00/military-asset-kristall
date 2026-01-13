@@ -112,7 +112,7 @@ export default function MovementLogsPage() {
                                         <option value="EXPENDITURE">Expenditure</option>
                                     </select>
                                 </div>
-                                {user?.role === "ADMIN" && (
+                                {["ADMIN", "LOGISTICS_OFFICER"].includes(user?.role || "") && (
                                     <div>
                                         <label className="text-xs font-medium text-foreground block mb-2">Base</label>
                                         <select

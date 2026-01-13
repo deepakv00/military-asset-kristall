@@ -7,9 +7,11 @@ export const getMetrics = async (req: AuthRequest, res: Response) => {
         const { fromDate, toDate, equipment, baseId } = req.query
         const user = req.user!
 
-        // RBAC: Base Commander and Logistics Officer can only see their own base
+        // RBAC: Base Commander can only see their own base. Logistics Officer can see all bases.
         let targetBaseId = baseId as string
-        if (user.role !== "ADMIN") {
+        if (user.role === "BASE_COMMANDER") {
+            targetBaseId = user.baseId!
+        } else if (user.role !== "ADMIN" && !targetBaseId) {
             targetBaseId = user.baseId!
         }
 

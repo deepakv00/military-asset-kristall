@@ -8,7 +8,11 @@ const app = express()
 
 // CORS configuration for production
 app.use(cors({
-    origin: ["https://military-asset-kristall.vercel.app", "http://localhost:3000"],
+    origin: [
+        "https://military-asset-kristall.vercel.app",
+        /\.vercel\.app$/, // Allow all Vercel deployments
+        "http://localhost:3000"
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
